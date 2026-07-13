@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: kubecalc-deployment
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: kubecalc
+
+  template:
+    metadata:
+      labels:
+        app: kubecalc
+    
+    spec:
+      containers:
+      - name: kubecalc-container
+        image: mrsurendar/kubecalc:v1
+        ports:
+        - containerPort: 80

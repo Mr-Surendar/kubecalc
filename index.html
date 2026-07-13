@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kubecalc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1b1f27;
+    --grid-line: rgba(255,255,255,0.035);
+    --panel-1: #4d493f;
+    --panel-2: #35322b;
+    --screen-bg: #14100c;
+    --led: #ffb000;
+    --led-dim: rgba(255,176,0,0.25);
+    --copper: #b87333;
+    --copper-dark: #8c5527;
+    --key-face: #2f2c26;
+    --key-text: #ede6d6;
+    --key-shadow: #100e0b;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+      var(--bg);
+    background-size: 28px 28px, 28px 28px, cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: #7a8091;
+    text-transform: uppercase;
+  }
+
+  .unit {
+    width: 340px;
+    padding: 22px;
+    border-radius: 22px;
+    background: linear-gradient(155deg, var(--panel-1), var(--panel-2));
+    box-shadow:
+      0 30px 60px -20px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.08),
+      inset 0 -2px 4px rgba(0,0,0,0.4);
+    position: relative;
+  }
+
+  /* corner screws — small skeuomorphic detail befitting an instrument */
+  .screw {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #6b675a, #201e19 70%);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5);
+  }
+  .screw::after {
+    content: "";
+    position: absolute;
+    top: 50%; left: 12%;
+    width: 76%; height: 1.4px;
+    background: rgba(0,0,0,0.6);
+    transform: translateY(-50%) rotate(35deg);
+  }
+  .screw.tl { top: 10px; left: 10px; }
+  .screw.tr { top: 10px; right: 10px; }
+  .screw.bl { bottom: 10px; left: 10px; }
+  .screw.br { bottom: 10px; right: 10px; }
+
+  .screen {
+    background: var(--screen-bg);
+    border-radius: 12px;
+    padding: 22px 18px;
+    margin-bottom: 18px;
+    box-shadow:
+      inset 0 4px 10px rgba(0,0,0,0.7),
+      inset 0 0 0 1px rgba(0,0,0,0.6);
+    text-align: right;
+    overflow: hidden;
+  }
+
+  .screen-trace {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--led-dim);
+    min-height: 16px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .screen-main {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 40px;
+    color: var(--led);
+    text-shadow: 0 0 10px var(--led-dim), 0 0 2px var(--led);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .screen-main.flicker {
+    animation: flicker 0.35s steps(6, end);
+  }
+
+  @keyframes flicker {
+    0%   { opacity: 0.2; }
+    20%  { opacity: 1; }
+    35%  { opacity: 0.35; }
+    55%  { opacity: 1; }
+    75%  { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+
+  .pad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  button {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 17px;
+    border: none;
+    border-radius: 10px;
+    padding: 16px 0;
+    cursor: pointer;
+    background: var(--key-face);
+    color: var(--key-text);
+    box-shadow:
+      0 3px 0 var(--key-shadow),
+      0 4px 6px rgba(0,0,0,0.4);
+    transition: transform 0.06s ease, box-shadow 0.06s ease;
+  }
+
+  button:active {
+    transform: translateY(3px);
+    box-shadow:
+      0 0 0 var(--key-shadow),
+      0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  button.op {
+    background: linear-gradient(160deg, var(--copper), var(--copper-dark));
+    color: #fff2e2;
+  }
+
+  button.fn {
+    background: #55524a;
+    color: #f2ede2;
+  }
+
+  button.eq {
+    grid-column: span 2;
+    background: linear-gradient(160deg, #ffb000, #b87826);
+    color: #221a0c;
+    font-weight: 700;
+  }
+
+  button.zero {
+    grid-column: span 2;
+  }
+
+  .footer-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: #565c6c;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+  <div class="stage">
+    <div class="label">Version No. 01 — Arithmetic Unit</div>
+
+    <div class="unit">
+      <div class="screw tl"></div>
+      <div class="screw tr"></div>
+      <div class="screw bl"></div>
+      <div class="screw br"></div>
+
+      <div class="screen">
+        <div class="screen-trace" id="trace">&nbsp;</div>
+        <div class="screen-main" id="main">0</div>
+      </div>
+
+      <div class="pad">
+        <button class="fn" data-action="clear">C</button>
+        <button class="fn" data-action="back">⌫</button>
+        <button class="op" data-value="%">%</button>
+        <button class="op" data-value="/">÷</button>
+
+        <button data-value="7">7</button>
+        <button data-value="8">8</button>
+        <button data-value="9">9</button>
+        <button class="op" data-value="*">×</button>
+
+        <button data-value="4">4</button>
+        <button data-value="5">5</button>
+        <button data-value="6">6</button>
+        <button class="op" data-value="-">−</button>
+
+        <button data-value="1">1</button>
+        <button data-value="2">2</button>
+        <button data-value="3">3</button>
+        <button class="op" data-value="+">+</button>
+
+        <button class="zero" data-value="0">0</button>
+        <button data-value=".">.</button>
+        <button class="eq" data-action="equals">=</button>
+      </div>
+    </div>
+
+    <div class="footer-tag">Keys respond · Enter = / Backspace ⌫ / Esc C</div>
+  </div>
+
+<script>
+  const traceEl = document.getElementById('trace');
+  const mainEl = document.getElementById('main');
+  let expression = '';
+
+  function render(showTrace) {
+    mainEl.textContent = expression === '' ? '0' : prettify(expression);
+    if (showTrace) traceEl.textContent = prettify(expression);
+  }
+
+  function prettify(expr) {
+    return expr
+      .replace(/\*/g, '×')
+      .replace(/\//g, '÷')
+      .replace(/-/g, '−');
+  }
+
+  function flicker() {
+    mainEl.classList.remove('flicker');
+    void mainEl.offsetWidth; // restart animation
+    mainEl.classList.add('flicker');
+  }
+
+  function isOperator(ch) {
+    return ['+', '-', '*', '/'].includes(ch);
+  }
+
+  function appendValue(val) {
+    if (val === '%') {
+      expression += '/100';
+      render(false);
+      return;
+    }
+    if (isOperator(val)) {
+      const lastChar = expression.slice(-1);
+      if (expression === '' && val !== '-') return;
+      if (isOperator(lastChar)) {
+        expression = expression.slice(0, -1) + val;
+      } else {
+        expression += val;
+      }
+    } else {
+      expression += val;
+    }
+    render(false);
+  }
+
+  function clearAll() {
+    expression = '';
+    render(false);
+    traceEl.textContent = '\u00a0';
+  }
+
+  function backspace() {
+    expression = expression.slice(0, -1);
+    render(false);
+  }
+
+  function calculate() {
+    if (expression === '') return;
+    try {
+      // Only allow digits, operators, dot, parens, slashes
+      if (!/^[0-9+\-*/.() ]+$/.test(expression)) throw new Error('invalid');
+      const trace = prettify(expression);
+      const result = Function('"use strict"; return (' + expression + ')')();
+      if (!isFinite(result)) throw new Error('div by zero');
+      traceEl.textContent = trace + ' =';
+      expression = String(round(result));
+      flicker();
+      render(false);
+    } catch (e) {
+      mainEl.textContent = 'Error';
+      traceEl.textContent = 'Check the input';
+      expression = '';
+      flicker();
+    }
+  }
+
+  function round(num) {
+    return Math.round((num + Number.EPSILON) * 1e10) / 1e10;
+  }
+
+  document.querySelectorAll('button[data-value]').forEach(btn => {
+    btn.addEventListener('click', () => appendValue(btn.dataset.value));
+  });
+
+  document.querySelector('[data-action="clear"]').addEventListener('click', clearAll);
+  document.querySelector('[data-action="back"]').addEventListener('click', backspace);
+  document.querySelector('[data-action="equals"]').addEventListener('click', calculate);
+
+  window.addEventListener('keydown', (e) => {
+    if (/[0-9.]/.test(e.key)) appendValue(e.key);
+    else if (['+','-','*','/'].includes(e.key)) appendValue(e.key);
+    else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calculate(); }
+    else if (e.key === 'Backspace') backspace();
+    else if (e.key === 'Escape') clearAll();
+  });
+
+  render(false);
+</script>
+
+</body>
+</html>
