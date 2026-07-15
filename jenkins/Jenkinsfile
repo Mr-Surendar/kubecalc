@@ -8,13 +8,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/Mr-Surendar/kubecalc.git'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 sh '''
@@ -33,9 +26,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                        echo "$DOCKER_PASS" | docker login \
-                        -u "$DOCKER_USER" \
-                        --password-stdin
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     '''
                 }
             }
@@ -52,11 +43,11 @@ pipeline {
 
     post {
         success {
-            echo "Docker image pushed successfully!"
+            echo 'Pipeline completed successfully!'
         }
 
         failure {
-            echo "Pipeline failed!"
+            echo 'Pipeline failed.'
         }
     }
 }
