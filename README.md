@@ -10,7 +10,7 @@
 
 > End-to-End DevSecOps CI Pipeline using Jenkins, Docker, Kubernetes, SonarQube, Helm, Prometheus and Grafana.
 
-![Architecture](asset\1784183342009.png)
+![Architecture](asset/1784183342009.png)
 
 ---
 
